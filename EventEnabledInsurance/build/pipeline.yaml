@@ -110,6 +110,7 @@ spec:
 
     # build mq image
     - name: build-mq-image
+      retries: 5
       runAfter:
         - fixup-dockerfiles
       taskRef:
@@ -144,6 +145,7 @@ spec:
 
     # build ace rest
     - name: build-ace-rest
+      retries: 5
       runAfter:
         - fixup-dockerfiles
       taskRef:
@@ -165,6 +167,7 @@ spec:
 
     # build ace db-writer
     - name: build-ace-db-writer
+      retries: 5
       runAfter:
         - fixup-dockerfiles
       taskRef:
