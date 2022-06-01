@@ -62,6 +62,25 @@ done
 
 set -e
 
+function printPodsNotRunningLogs(){
+    NAME=${1}
+    PROJECT=${2}
+
+    CONTAINERS=$(oc get pod $NAME -o json -n $PROJECT | jq -r '{container: .status.containerStatuses[].name}')
+    if [[ $CONTAINERS == null  ]]; then
+        oc logs $NAME -n $PROJECT
+    else
+        for row in $(echo "${CONTAINERS}" | jq -r '. | @base64'); do
+            _jq() {
+                echo ${row} | base64 --decode | jq -r ${1}
+            }
+            CONTAINER=$(_jq '.container')
+            echo "Logging container: $CONTAINER for $NAME"
+            oc logs $NAME -c $CONTAINER -n $PROJECT
+        done
+    fi
+}
+
 NAMESPACE="${NAMESPACE}"
 PORG_ADMIN_EMAIL=${PORG_ADMIN_EMAIL:-"cp4i-admin@apiconnect.net"} # update to recipient of portal site creation email
 ACE_REGISTRATION_SECRET_NAME="ace-v11-service-creds"              # corresponds to registration obj currently hard-coded in configmap
@@ -93,7 +112,7 @@ for i in $(seq 1 120); do
     break
   else
     echo "Waiting for APIC install to complete (Attempt $i of 120). Status: $APIC_STATUS"
-    if [ $i -gt 50 ]; then
+    if [ $i -gt 115 ]; then
       oc get apiconnectcluster,managementcluster,portalcluster,gatewaycluster,pvc,pod -n $NAMESPACE
     fi
     $CURRENT_DIR/zen-fix.sh -n "$NAMESPACE"
@@ -102,6 +121,16 @@ for i in $(seq 1 120); do
 done
 
 if [ "$APIC_STATUS" != "Ready" ]; then
+  oc get pods -n $NAMESPACE -o wide | grep -v Running | grep -v Completed
+  echo "INFO: Printing Final state of APIC resources"
+  oc get apiconnectcluster,managementcluster,portalcluster,gatewaycluster,pvc,pod -n $NAMESPACE
+  PODS_NOT_RUNNING=$(oc get pods -o name -n $NAMESPACE |  grep -v Running | grep -v Completed)
+
+  for POD in $PODS_NOT_RUNNING; do
+    echo "INFO: Printing logs for failed pods"
+    printPodsNotRunningLogs $POD $NAMESPACE
+  done
+  
   printf "$cross"
   echo "[ERROR] APIC failed to install"
   exit 1

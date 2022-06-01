@@ -54,6 +54,9 @@ done
 
 # Instantiate Platform Navigator
 echo "INFO: Instantiating Platform Navigator"
+echo "INFO: Printing the PVC status before Nav install"
+echo "INFO: $(oc get pvc -n ${namespace})"
+
 time=0
 while ! cat <<EOF | oc apply -f -; do
 apiVersion: integration.ibm.com/v1beta1
@@ -89,6 +92,10 @@ while [[ "$(oc get PlatformNavigator -n ${namespace} ${namespace}-navigator -o j
   if [ $time -gt 90 ]; then
     echo "INFO: The platform navigator object status:"
     echo "INFO: $(oc get PlatformNavigator -n ${namespace} ${namespace}-navigator)"
+    echo "INFO: Printing PVC status "
+    echo "INFO: $(oc get pvc -n ${namespace})"
+    echo "INFO: Printing the PVC yamls that are failing"
+    echo "INFO: $(oc get pvc -n ${namespace}  -o yaml | grep -v Bound)"
     echo "ERROR: Exiting installation Platform Navigator object is not ready"
     exit 1
   fi
