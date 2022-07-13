@@ -478,6 +478,17 @@ data:
   .dockerconfigjson: $COMBINED_DOCKER_CFG_B64
 EOF
 
+docker login $IMAGE_REPO -u $DOCKER_REGISTRY_USER -p $DOCKER_REGISTRY_PASS
+if ! docker pull cp.icr.io/cp/icp4i/icip-services:2022-06-23-0908-3703b21e@sha256:30330b47a62b8ba1d30ded4ec844198c564c87155c6b8daa52ad1f90f263e89e; then
+  echo "ERROR: Failed to pull the navigator image using the ekey"
+  exit 1
+fi
+
+echo "INFO: Navigator image pulled successfully, ekey is ok"
+
+# TODO Exit early for testing purposes. DON'T MERGE THIS!!!
+exit 0
+
 divider
 
 echo -e "$INFO [INFO] Checking for the platform-auth-idp-credentials secret\n"
